@@ -1,7 +1,6 @@
 package boomflow.log;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,101 +10,67 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import boomflow.common.Address;
 import boomflow.common.Utils;
-import conflux.web3j.Cfx;
 import conflux.web3j.RpcException;
-import conflux.web3j.request.Epoch;
-import conflux.web3j.request.LogFilter;
-import conflux.web3j.response.Log;
-import conflux.web3j.types.Address;
 
 /**
  * EventLogMonitor is used to monitor event logs of all CRC-L contracts, including
  * deposit and withdraw event logs.
  */
-public class EventLogMonitor implements Runnable {
+public abstract class EventLogMonitor implements Runnable {
 	
-	private static final List<List<String>> FILTER_TOPCIS = Arrays.asList(
-			Arrays.asList(DepositData.EVENT_HASH, ScheduleWithdrawRequest.EVENT_HASH),
-			null, null, null);
-	
-	private Cfx cfx;
 	private EventLogHandler handler;
-	private Logger logger = LoggerFactory.getLogger(EventLogMonitor.class);
+	protected Logger logger = LoggerFactory.getLogger(EventLogMonitor.class);
 	
-	public EventLogMonitor(Cfx cfx, EventLogHandler handler) {
-		this.cfx = cfx;
+	protected EventLogMonitor(EventLogHandler handler) {
 		this.handler = handler;
 	}
 	
+	protected abstract BigInteger getLatestConfirmedBlock();
+	protected abstract void pollEventLogs(BigInteger from, BigInteger to, List<Address> contracts,
+			List<DepositData> deposits, List<ScheduleWithdrawRequest> withdraws);
+	
 	/**
-	 * Poll event logs for confirmed epochs.
-	 * @return <code>true</code> if there are more epochs to poll. Otherwise, false.
+	 * Poll event logs for confirmed blocks.
+	 * @return <code>true</code> if there are more blocks to poll. Otherwise, false.
 	 */
 	public boolean pollOnce() throws RpcException {
-		// only poll confirmed event logs
-		BigInteger confirmedEpoch = this.cfx.getEpochNumber(Epoch.latestConfirmed()).sendAndGet();
-		BigInteger lastPollEpoch = this.handler.getLastPollEpoch();
-		if (confirmedEpoch.compareTo(lastPollEpoch) <= 0) {
-			logger.trace("wait for more epochs to poll event logs from confirmed epoch");
+		// only poll event logs from confirmed blocks.
+		BigInteger confirmed = this.getLatestConfirmedBlock();
+		BigInteger lastPolled = this.handler.getLastPollBlockNumber();
+		if (confirmed.compareTo(lastPolled) <= 0) {
+			logger.trace("wait for more blocks to poll event logs");
 			return false;
 		}
 		
-		// poll logs from the latest confirmed epoch if address not specified
+		// poll logs from the latest confirmed block if address not specified
 		List<Address> pollAddresses = this.handler.getPollAddresses();
         if (pollAddresses.isEmpty()) {
-			this.handler.handleEventLogs(Collections.emptyList(), Collections.emptyList(), confirmedEpoch);
-			logger.trace("address not specified and just move forward the last polled epoch");
+			this.handler.handleEventLogs(Collections.emptyList(), Collections.emptyList(), confirmed);
+			logger.trace("address not specified and just move forward the last polled block");
 			return false;
 		}
         
-        // limit the number of polled epochs to avoid RPC timeout
-        BigInteger pollEpochTo = this.handler.getMaxPollEpochs().add(lastPollEpoch).min(confirmedEpoch);
+        // limit the number of polled blocks to avoid RPC timeout
+        BigInteger pollTo = this.handler.getMaxPollBlocks().add(lastPolled).min(confirmed);
         
         // poll logs
-        BigInteger pollEpochFrom = lastPollEpoch.add(BigInteger.ONE);
-		List<Log> logs = this.getLogs(pollEpochFrom, pollEpochTo, pollAddresses);
-		
+        BigInteger pollFrom = lastPolled.add(BigInteger.ONE);
 		
 		List<DepositData> deposits = new LinkedList<DepositData>();
 		List<ScheduleWithdrawRequest> withdraws = new LinkedList<ScheduleWithdrawRequest>();
 		
-		for (Log log : logs) {
-			// topics[0] is event hash, and should not be empty
-			String eventHash = log.getTopics().get(0);
-			
-			if (DepositData.EVENT_HASH.equalsIgnoreCase(eventHash)) {
-				DepositData data = new DepositData(log);
-				logger.trace("polled deposit event log, sender = {}, recipient = {}, amount = {}", data.getSenderAddress(), data.getRecipientAddress(), data.getAmount());
-				deposits.add(data);
-			}
-			
-			if (ScheduleWithdrawRequest.EVENT_HASH.equalsIgnoreCase(eventHash)) {
-				ScheduleWithdrawRequest data = new ScheduleWithdrawRequest(log);
-				logger.trace("polled withdraw event log, sender = {}, time = {}", data.getSenderAddress(), data.getTime());
-				withdraws.add(data);
-			}
-		}
+		this.pollEventLogs(pollFrom, pollTo, pollAddresses, deposits, withdraws);
 		
 		if (!deposits.isEmpty() || !withdraws.isEmpty()) {
-			logger.info("polled event logs, epochFrom = {}, epochTo = {}, deposits = {}, withdraws = {}",
-					pollEpochFrom, pollEpochTo, deposits.size(), withdraws.size());
+			logger.info("polled event logs, from = {}, to = {}, deposits = {}, withdraws = {}",
+					pollFrom, pollTo, deposits.size(), withdraws.size());
 		}
 		
-		this.handler.handleEventLogs(deposits, withdraws, pollEpochTo);
+		this.handler.handleEventLogs(deposits, withdraws, pollTo);
         
-        return confirmedEpoch.compareTo(pollEpochTo) > 0;
-	}
-	
-	private List<Log> getLogs(BigInteger from, BigInteger to, List<Address> addresses) throws RpcException {
-		LogFilter filter = new LogFilter();
-		
-        filter.setFromEpoch(Epoch.numberOf(from));
-		filter.setToEpoch(Epoch.numberOf(to));
-		filter.setAddress(addresses);
-		filter.setTopics(FILTER_TOPCIS);
-		
-		return this.cfx.getLogs(filter).sendAndGet();
+        return confirmed.compareTo(pollTo) > 0;
 	}
 	
 	/**
