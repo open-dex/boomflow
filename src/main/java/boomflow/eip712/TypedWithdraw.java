@@ -10,10 +10,10 @@ import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.StaticStruct;
 import org.web3j.abi.datatypes.generated.Uint256;
 
+import boomflow.common.Address;
 import boomflow.eip712.core.Domain;
 import boomflow.eip712.core.Entry;
 import boomflow.eip712.core.TypedData;
-import conflux.web3j.types.CfxAddress;
 
 /**
  * Withdraw request that supports to validate against EIP712 signature.
@@ -35,19 +35,21 @@ public class TypedWithdraw extends StaticStruct implements TypedData {
 	public boolean burn;
 	public long nonce;
 	
-	private CfxAddress contractAddress;
+	private Address contractAddress;
+	private Address signer;
 	private String signature;
 	
-	public TypedWithdraw(CfxAddress userAddress, BigInteger amount, CfxAddress recipient, boolean burn, long nonce, CfxAddress contractAddress, String signature) {
-		super(userAddress.getABIAddress(), new Uint256(amount), recipient.getABIAddress(), new Bool(burn), new Uint256(nonce));
+	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long nonce, Address contractAddress, String signature) {
+		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(nonce));
 		
-		this.userAddress = userAddress.getHexAddress();
+		this.userAddress = userAddress.toHex();
 		this.amount = amount;
-		this.recipient = recipient.getHexAddress();
+		this.recipient = recipient.toHex();
 		this.burn = burn;
 		this.nonce = nonce;
 		
 		this.contractAddress = contractAddress;
+		this.signer = userAddress;
 		this.signature = signature;
 	}
 
@@ -67,8 +69,8 @@ public class TypedWithdraw extends StaticStruct implements TypedData {
 	}
 	
 	@Override
-	public String signer() {
-		return this.userAddress;
+	public Address signer() {
+		return this.signer;
 	}
 	
 	@Override

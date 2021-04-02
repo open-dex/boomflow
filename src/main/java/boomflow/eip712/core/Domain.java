@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import boomflow.common.Address;
 import boomflow.common.Utils;
-import conflux.web3j.types.CfxAddress;
 
 public class Domain {
 	
@@ -17,7 +17,7 @@ public class Domain {
 	public static String defaultName = "CRCL";
 	public static String defaultVersion = "1.0";
 	public static long defaultChainId;
-	public static CfxAddress boomflowAddress;
+	public static Address boomflowAddress;
 	public static String boomflowName = "Boomflow";
 	
 	private static ConcurrentMap<String, Domain> domains = new ConcurrentHashMap<String, Domain>();
@@ -31,13 +31,13 @@ public class Domain {
 	private String name;
 	private String version;
 	private long chainId;
-	private CfxAddress verifyingContractAddress;
+	private Address verifyingContractAddress;
 	
-	public Domain(String name, CfxAddress contract) {
+	public Domain(String name, Address contract) {
 		this(name, defaultVersion, defaultChainId, contract);
 	}
 
-	public Domain(String name, String version, long chainId, CfxAddress contract) {
+	public Domain(String name, String version, long chainId, Address contract) {
 		this.name = name;
 		this.version = version;
 		this.chainId = chainId;
@@ -57,11 +57,11 @@ public class Domain {
 	}
 	
 	public String getVerifyingContract() {
-		return this.verifyingContractAddress.getHexAddress();
+		return this.verifyingContractAddress.toHex();
 	}
 	
 	@JsonIgnore
-	public CfxAddress getVerifyingContractAddress() {
+	public Address getVerifyingContractAddress() {
 		return verifyingContractAddress;
 	}
 	
@@ -75,8 +75,8 @@ public class Domain {
 		});
 	}
 	
-	public static Domain getCRCL(CfxAddress crclAddress) {
-		return domains.computeIfAbsent(crclAddress.getAddress(), address -> {
+	public static Domain getCRCL(Address crclAddress) {
+		return domains.computeIfAbsent(crclAddress.toString(), address -> {
 			return new Domain(defaultName, crclAddress);
 		});
 	}

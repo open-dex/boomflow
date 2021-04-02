@@ -10,10 +10,10 @@ import org.web3j.abi.datatypes.StaticStruct;
 import org.web3j.abi.datatypes.generated.Int256;
 import org.web3j.abi.datatypes.generated.Uint256;
 
+import boomflow.common.Address;
 import boomflow.eip712.core.Domain;
 import boomflow.eip712.core.Entry;
 import boomflow.eip712.core.TypedData;
-import conflux.web3j.types.CfxAddress;
 
 public class TypedOrder extends StaticStruct implements TypedData {
 	
@@ -46,15 +46,16 @@ public class TypedOrder extends StaticStruct implements TypedData {
 	public long marginRate;
 	public long posiId;
 	
+	private Address signer;
 	private String signature;
 	
-	public TypedOrder(CfxAddress userAddress, BigInteger quantity, BigInteger price, long orderType, long side, long salt, long contractId,
+	public TypedOrder(Address userAddress, BigInteger quantity, BigInteger price, long orderType, long side, long salt, long contractId,
 			long positionEffect, long marginType, long marginRate, long posiId, String signature) {
-		super(userAddress.getABIAddress(), new Uint256(quantity), new Uint256(price), new Uint256(orderType), new Int256(side),
+		super(userAddress.toABI(), new Uint256(quantity), new Uint256(price), new Uint256(orderType), new Int256(side),
 				new Uint256(salt), new Uint256(contractId), new Uint256(positionEffect), new Uint256(marginType),
 				new Uint256(marginRate), new Uint256(posiId));
 		
-		this.userAddress = userAddress.getHexAddress();
+		this.userAddress = userAddress.toHex();
 		this.quantity = quantity;
 		this.price = price;
 		this.orderType = orderType;
@@ -65,6 +66,8 @@ public class TypedOrder extends StaticStruct implements TypedData {
 		this.marginType = marginType;
 		this.marginRate = marginRate;
 		this.posiId = posiId;
+		
+		this.signer = userAddress;
 		this.signature = signature;
 	}
 
@@ -84,8 +87,8 @@ public class TypedOrder extends StaticStruct implements TypedData {
 	}
 
 	@Override
-	public String signer() {
-		return this.userAddress;
+	public Address signer() {
+		return this.signer;
 	}
 
 	@Override

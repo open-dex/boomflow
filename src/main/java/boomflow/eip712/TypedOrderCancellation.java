@@ -8,10 +8,10 @@ import java.util.Map;
 import org.web3j.abi.datatypes.StaticStruct;
 import org.web3j.abi.datatypes.generated.Uint256;
 
+import boomflow.common.Address;
 import boomflow.eip712.core.Domain;
 import boomflow.eip712.core.Entry;
 import boomflow.eip712.core.TypedData;
-import conflux.web3j.types.CfxAddress;
 
 public class TypedOrderCancellation extends StaticStruct implements TypedData {
 	
@@ -28,16 +28,18 @@ public class TypedOrderCancellation extends StaticStruct implements TypedData {
 	public long originalOrderId;
 	public long nonce;
 	
+	private Address signer;
 	private String signature;
 	
-	public TypedOrderCancellation(CfxAddress userAddress, long contractId, long orderId, long nonce, String signature) {
-		super(userAddress.getABIAddress(), new Uint256(contractId), new Uint256(orderId), new Uint256(nonce));
+	public TypedOrderCancellation(Address userAddress, long contractId, long orderId, long nonce, String signature) {
+		super(userAddress.toABI(), new Uint256(contractId), new Uint256(orderId), new Uint256(nonce));
 		
-		this.userAddress = userAddress.getHexAddress();
+		this.userAddress = userAddress.toHex();
 		this.contractId = contractId;
 		this.originalOrderId = orderId;
 		this.nonce = nonce;
 		
+		this.signer = userAddress;
 		this.signature = signature;
 	}
 
@@ -57,8 +59,8 @@ public class TypedOrderCancellation extends StaticStruct implements TypedData {
 	}
 
 	@Override
-	public String signer() {
-		return this.userAddress;
+	public Address signer() {
+		return this.signer;
 	}
 
 	@Override
