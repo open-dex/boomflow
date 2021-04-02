@@ -17,17 +17,20 @@ import conflux.web3j.RpcException;
 public class EthEventLogMonitor extends EventLogMonitor {
 	
 	private Web3j web3j;
+	private BigInteger confirmBlocks;
 
-	public EthEventLogMonitor(Web3j web3j, EventLogHandler handler) {
+	public EthEventLogMonitor(Web3j web3j, EventLogHandler handler, int confirmBlocks) {
 		super(handler);
 		
 		this.web3j = web3j;
+		this.confirmBlocks = BigInteger.valueOf(confirmBlocks);
 	}
 
 	@Override
 	protected BigInteger getLatestConfirmedBlock() {
 		try {
-			return this.web3j.ethBlockNumber().send().getBlockNumber();
+			BigInteger blockNumber = this.web3j.ethBlockNumber().send().getBlockNumber();
+			return this.confirmBlocks.compareTo(blockNumber) >= 0 ? BigInteger.ZERO : blockNumber.subtract(this.confirmBlocks);
 		} catch (IOException e) {
 			throw RpcException.sendFailure(e);
 		}
