@@ -3,28 +3,20 @@ package boomflow.common;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.crypto.Sign.SignatureData;
 import org.web3j.utils.Numeric;
-
-import conflux.web3j.types.Address;
-import conflux.web3j.types.AddressException;
-import conflux.web3j.types.AddressType;
 
 /**
  * Utilities to validate signature.
  */
 public class SignUtils {
 	
-	public static void validate(String signerAddress, String sigHex, byte[] message) throws AddressException, ValidationException {
+	public static void validate(Address signerAddress, String sigHex, byte[] message) throws ValidationException {
 		validate(signerAddress, sigHex, message, true);
 	}
 	
-	public static void validate(String signerAddress, String sigHex, byte[] message, boolean needToHash) throws AddressException, ValidationException {
-		signerAddress = Address.normalizeHexAddress(signerAddress);
-		AddressType.validateHexAddress(signerAddress, AddressType.User);
-		
+	public static void validate(Address signerAddress, String sigHex, byte[] message, boolean needToHash) throws ValidationException {
 		Validators.validateSignature(sigHex);
 		
 		byte[] sigBytes = Numeric.hexStringToByteArray(sigHex);
@@ -42,8 +34,7 @@ public class SignUtils {
 			throw new ValidationException("invalid signature");
 		}
 		
-		String recoveredAddress = AddressType.User.normalize(Keys.getAddress(pubkey));
-		if (!signerAddress.equalsIgnoreCase(recoveredAddress)) {
+		if (!signerAddress.equals(pubkey)) {
 			throw new ValidationException("invalid signature");
 		}
 	}
