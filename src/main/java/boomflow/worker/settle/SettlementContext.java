@@ -2,18 +2,18 @@ package boomflow.worker.settle;
 
 import java.math.BigInteger;
 
+import boomflow.common.Address;
 import boomflow.eip712.core.Domain;
-import conflux.web3j.types.CfxAddress;
 import conflux.web3j.types.RawTransaction;
 
 public class SettlementContext {
 	
-	private CfxAddress contract;
+	private Address contract;
 	private String data;
 	private BigInteger gasLimit;
 	private BigInteger storageLimit;
 	
-	public SettlementContext(CfxAddress contract, String data, BigInteger gasLimit, BigInteger storageLimit) {
+	public SettlementContext(Address contract, String data, BigInteger gasLimit, BigInteger storageLimit) {
 		this.contract = contract;
 		this.data = data;
 		this.gasLimit = gasLimit;
