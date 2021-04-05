@@ -1,9 +1,14 @@
 package boomflow.worker.settle;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import conflux.web3j.Cfx;
 import conflux.web3j.RpcException;
@@ -65,6 +70,25 @@ public class TransactionRecorder {
 			if (receipt.isPresent()) {
 				return receipt;
 			}
+		}
+		
+		return Optional.empty();
+	}
+	
+	public Optional<TransactionReceipt> getReceipt(Web3j web3j) throws RpcException {
+		try {
+			for (Record record : this.records) {
+				EthGetTransactionReceipt response = web3j.ethGetTransactionReceipt(record.getTxHash()).send();
+				if (response.hasError()) {
+					throw new RpcException(response.getError());
+				}
+				
+				if (response.getTransactionReceipt().isPresent()) {
+					return response.getTransactionReceipt();
+				}
+			}
+		} catch (IOException e) {
+			throw RpcException.sendFailure(e);
 		}
 		
 		return Optional.empty();

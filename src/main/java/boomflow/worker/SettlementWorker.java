@@ -55,7 +55,7 @@ public class SettlementWorker extends BatchWorker<Settleable> {
 		this.handler = handler;
 		this.txRelayer = txRelayer;
 		
-		this.monitor = new TransactionConfirmationMonitor(admin.getCfx());
+		this.monitor = new CfxTransactionConfirmationMonitor(admin.getCfx());
 		this.monitor.onTxLongUnexecuted.addHandler(new Handler<Settleable>() {
 			
 			@Override
