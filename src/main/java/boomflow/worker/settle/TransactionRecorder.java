@@ -28,15 +28,15 @@ public class TransactionRecorder {
 	// track all re-sent transactions
 	private List<Record> records = new ArrayList<Record>();
 	
-	public TransactionRecorder(String txHash, RawTransaction tx) {
-		this.addRecord(txHash, tx);
-	}
-
 	// in case of service restarted, and database only records
 	// the tx hash and nonce.
 	public TransactionRecorder(String txHash, BigInteger nonce) {
 		this.nonce = nonce;
 		this.records.add(new Record(txHash));
+	}
+	
+	public TransactionRecorder(String txHash, RawTransaction tx) {
+		this.addRecord(txHash, tx);
 	}
 	
 	public BigInteger getNonce() {
@@ -49,7 +49,7 @@ public class TransactionRecorder {
 			this.nonce = tx.getNonce();
 		}
 		
-		this.records.add(new Record(txHash, tx));
+		this.records.add(new Record(txHash, tx.getGasPrice(), tx.getEpochHeight()));
 	}
 	
 	public Record getLast() {
@@ -70,33 +70,38 @@ public class TransactionRecorder {
 		return Optional.empty();
 	}
 	
-	public Optional<Transaction> getTransaction(Cfx cfx) throws RpcException {
+	public boolean isTxExists(Cfx cfx) throws RpcException {
 		int len = this.records.size();
+		
 		for (int i = len - 1; i >= 0; i--) {
 			String txHash = this.records.get(i).getTxHash();
 			Optional<Transaction> tx = cfx.getTransactionByHash(txHash).sendAndGet();
 			if (tx.isPresent()) {
-				return tx;
+				return true;
 			}
 		}
 		
-		return Optional.empty();
+		return false;
 	}
 
 	public static class Record {
 		private String txHash;
 		private Optional<BigInteger> gasPrice = Optional.empty();
-		private Optional<BigInteger> epoch = Optional.empty();
+		private Optional<BigInteger> blockNumber = Optional.empty();
 		private boolean longUnexecuted = false;
 		
 		public Record(String txHash) {
-			this.txHash = txHash;
+			this(txHash, null);
 		}
 		
-		public Record(String txHash, RawTransaction tx) {
+		public Record(String txHash, BigInteger gasPrice) {
+			this(txHash, gasPrice, null);
+		}
+		
+		public Record(String txHash, BigInteger gasPrice, BigInteger blockNumber) {
 			this.txHash = txHash;
-			this.gasPrice = Optional.of(tx.getGasPrice());
-			this.epoch = Optional.of(tx.getEpochHeight());
+			this.gasPrice = Optional.ofNullable(gasPrice);
+			this.blockNumber = Optional.ofNullable(blockNumber);
 		}
 		
 		public String getTxHash() {
@@ -107,12 +112,12 @@ public class TransactionRecorder {
 			return gasPrice;
 		}
 		
-		public Optional<BigInteger> getEpoch() {
-			return epoch;
+		public Optional<BigInteger> getBlockNumber() {
+			return blockNumber;
 		}
 		
-		public void setEpoch(BigInteger epoch) {
-			this.epoch = Optional.of(epoch);
+		public void setBlockNumber(BigInteger blockNumber) {
+			this.blockNumber = Optional.of(blockNumber);
 		}
 		
 		public boolean isLongUnexecuted() {

@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import boomflow.common.Address;
 import boomflow.eip712.core.Domain;
+import conflux.web3j.types.CfxAddress;
 import conflux.web3j.types.RawTransaction;
 
 public class SettlementContext {
@@ -25,7 +26,8 @@ public class SettlementContext {
 	}
 	
 	public RawTransaction buildTx(BigInteger nonce, BigInteger epoch) {
-		return RawTransaction.call(nonce, this.gasLimit, this.contract, this.storageLimit, epoch, this.data);
+		CfxAddress contract = new CfxAddress(this.contract.toString());
+		return RawTransaction.call(nonce, this.gasLimit, contract, this.storageLimit, epoch, this.data);
 	}
 
 }

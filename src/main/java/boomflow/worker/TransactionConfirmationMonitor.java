@@ -147,9 +147,9 @@ public class TransactionConfirmationMonitor {
 		}
 		
 		// In case of service restarted
-		if (!recorder.getLast().getEpoch().isPresent()) {
+		if (!recorder.getLast().getBlockNumber().isPresent()) {
 			BigInteger epoch = this.cfx.getEpochNumber().sendAndGet();
-			recorder.getLast().setEpoch(epoch);
+			recorder.getLast().setBlockNumber(epoch);
 		}
 		
 		this.items.put(recorder.getNonce(), item);
@@ -183,7 +183,7 @@ public class TransactionConfirmationMonitor {
 			Settleable settleable = this.items.firstEntry().getValue();
 			
 			// break out if not confirmed yet
-			BigInteger sentEpoch = settleable.getRecorder().getLast().getEpoch().get();
+			BigInteger sentEpoch = settleable.getRecorder().getLast().getBlockNumber().get();
 			if (sentEpoch.compareTo(confirmedEpoch) > 0) {
 				break;
 			}

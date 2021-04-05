@@ -108,7 +108,7 @@ public class SettlementWorker extends BatchWorker<Settleable> {
 		} else if (recorder.getLast().isLongUnexecuted()) {
 			// re-send transaction on any error
 			this.sendTransaction(data);
-		} else if (recorder.getTransaction(this.admin.getCfx()).isPresent()) {
+		} else if (recorder.isTxExists(this.admin.getCfx())) {
 			// already settled on chain in case of service restarted and continue to settle
 		} else {
 			// service restarted and last item not settled on chain yet.
