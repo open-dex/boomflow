@@ -41,14 +41,18 @@ public class CfxBuilder {
 		return this;
 	}
 	
+	public Web3jService buildWeb3jService() {
+		OkHttpClient client = new OkHttpClient.Builder()
+				.callTimeout(Duration.ofMillis(this.callTimeoutMillis))
+				.build();
+		return new HttpService(this.url, client);
+	}
+	
 	/**
 	 * Build a <code>Cfx</code> instance.
 	 */
 	public Cfx build() {
-		OkHttpClient client = new OkHttpClient.Builder()
-				.callTimeout(Duration.ofMillis(this.callTimeoutMillis))
-				.build();
-		Web3jService service = new HttpService(this.url, client);
+		Web3jService service = this.buildWeb3jService();
 		return Cfx.create(service, this.retry, this.retryIntervalMillis);
 	}
 

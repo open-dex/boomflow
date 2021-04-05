@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.utils.Strings;
 
 import boomflow.common.CfxBuilder;
@@ -12,19 +14,42 @@ import boomflow.common.worker.AsyncWorker;
 import boomflow.common.worker.PendingException;
 import conflux.web3j.Cfx;
 import conflux.web3j.RpcException;
+import conflux.web3j.response.StringResponse;
 
 /**
  * TransactionRelayer sends transactions to multiple RPC servers, so that
  * temporary network issue will not lead to transaction not propagated timely
  * or even not propagated out.
  */
-public class TransactionRelayer extends AsyncWorker<String> {
+public abstract class TransactionRelayer extends AsyncWorker<String> {
 	
 	private Map<String, Server> servers = new ConcurrentHashMap<String, Server>();
 	
-	public TransactionRelayer(ScheduledExecutorService executor) {
+	protected TransactionRelayer(ScheduledExecutorService executor) {
 		super(executor);
 	}
+	
+	public static TransactionRelayer createCfxTransactionRelayer(ScheduledExecutorService executor) {
+		return new TransactionRelayer(executor) {
+			
+			@Override
+			protected Server createServer(String url) {
+				return new CfxServer(url);
+			}
+		};
+	}
+	
+	public static TransactionRelayer createEthTransactionRelayer(ScheduledExecutorService executor) {
+		return new TransactionRelayer(executor) {
+			
+			@Override
+			protected Server createServer(String url) {
+				return new EthServer(url);
+			}
+		};
+	}
+	
+	protected abstract Server createServer(String url);
 	
 	public Map<String, Server> getServers() {
 		return servers;
@@ -44,7 +69,7 @@ public class TransactionRelayer extends AsyncWorker<String> {
 	
 	public void addServer(String url) {
 		if (!Strings.isEmpty(url)) {
-			this.servers.computeIfAbsent(url.toLowerCase(), Server::new);
+			this.servers.computeIfAbsent(url.toLowerCase(), this::createServer);
 		}
 	}
 	
@@ -52,15 +77,14 @@ public class TransactionRelayer extends AsyncWorker<String> {
 		this.servers.remove(url.toLowerCase());
 	}
 	
-	public static class Server {
+	public abstract static class Server {
 		
-		private static final int DEFAULT_CFX_TIMEOUT_MILLIS = 3_000;
+		protected static final int DEFAULT_TIMEOUT_MILLIS = 3_000;
 		
 		private static final int NUM_ERRORS_TO_SKIP = 10;
 		private static final int SKIP_TIMEOUT_MILLIS = 300_000;	// 5 minutes to recover
 		
 		private String url;
-		private Cfx cfx;
 		
 		private long numTotal;
 		private long numRpcErrors;
@@ -70,9 +94,8 @@ public class TransactionRelayer extends AsyncWorker<String> {
 		private long skipCounter;
 		private long skipTime;
 		
-		public Server(String url) {
+		protected Server(String url) {
 			this.url = url;
-			this.cfx = new CfxBuilder(url).withCallTimeout(DEFAULT_CFX_TIMEOUT_MILLIS).build();
 		}
 		
 		public String getUrl() {
@@ -95,6 +118,8 @@ public class TransactionRelayer extends AsyncWorker<String> {
 			return numUnknownErrors;
 		}
 		
+		protected abstract void sendRawTx(String signedTx) throws IOException, RpcException;
+		
 		public void send(String signedTx) {
 			// Current server may be skipped due to continuous non-PRC errors.
 			if (this.skipTime > 0) {
@@ -107,7 +132,7 @@ public class TransactionRelayer extends AsyncWorker<String> {
 			}
 			
 			try {
-				this.cfx.sendRawTransaction(signedTx).send();
+				this.sendRawTx(signedTx);
 				this.skipCounter = 0;
 			} catch (RpcException e) {
 				this.numRpcErrors++;
@@ -126,6 +151,45 @@ public class TransactionRelayer extends AsyncWorker<String> {
 			if (this.skipCounter >= NUM_ERRORS_TO_SKIP) {
 				this.skipCounter = 0;
 				this.skipTime = System.currentTimeMillis();
+			}
+		}
+	}
+	
+	static class CfxServer extends Server {
+		
+		private Cfx cfx;
+
+		public CfxServer(String url) {
+			super(url);
+			
+			this.cfx = new CfxBuilder(url).withCallTimeout(DEFAULT_TIMEOUT_MILLIS).build();
+		}
+
+		@Override
+		protected void sendRawTx(String signedTx) throws IOException, RpcException {
+			StringResponse response = this.cfx.sendRawTransaction(signedTx).send();
+			if (response.hasError()) {
+				throw new RpcException(response.getError());
+			}
+		}
+		
+	}
+	
+	static class EthServer extends Server {
+		
+		private Web3j web3j;
+		
+		public EthServer(String url) {
+			super(url);
+			
+			this.web3j = Web3j.build(new CfxBuilder(url).withCallTimeout(DEFAULT_TIMEOUT_MILLIS).buildWeb3jService());
+		}
+
+		@Override
+		protected void sendRawTx(String signedTx) throws IOException, RpcException {
+			EthSendTransaction response = this.web3j.ethSendRawTransaction(signedTx).send();
+			if (response.hasError()) {
+				throw new RpcException(response.getError());
 			}
 		}
 	}
