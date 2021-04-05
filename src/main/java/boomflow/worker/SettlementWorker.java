@@ -52,10 +52,7 @@ public class SettlementWorker extends BatchWorker<Settleable> {
 		super(executor, batchSize, waitCountdown, waitIntervalMillis);
 		
 		this.admin = admin;
-		
 		this.handler = handler;
-		this.handler.syncNonce(admin);
-		
 		this.txRelayer = txRelayer;
 		
 		this.monitor = new TransactionConfirmationMonitor(admin.getCfx());
@@ -77,6 +74,9 @@ public class SettlementWorker extends BatchWorker<Settleable> {
 			}
 			
 		});
+		
+		NonceSyncer nonceSyncer = new CfxNonceSyncer(admin);
+		nonceSyncer.sync(handler);
 	}
 	
 	@Override
