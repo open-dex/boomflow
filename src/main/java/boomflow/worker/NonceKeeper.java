@@ -32,23 +32,37 @@ public interface NonceKeeper {
 	
 	String getLastTxHash();
 	BigInteger getLastNonce();
+
+}
+
+interface NonceSyncer {
 	
-	/**
-	 * Sync up with nonce for the specified account.
-	 */
-	default void syncNonce(Account admin) {
-		String lastTxHash = this.getLastTxHash();
+	void sync(NonceKeeper keeper);
+	
+}
+
+class CfxNonceSyncer implements NonceSyncer {
+	
+	private Account admin;
+	
+	public CfxNonceSyncer(Account admin) {
+		this.admin = admin;
+	}
+	
+	@Override
+	public void sync(NonceKeeper keeper) {
+		String lastTxHash = keeper.getLastTxHash();
 		if (Strings.isEmpty(lastTxHash)) {
 			return;
 		}
 		
-		BigInteger lastNonce = this.getLastNonce();
+		BigInteger lastNonce = keeper.getLastNonce();
 		if (lastNonce == null) {
 			return;
 		}
 		
 		long nonceOffChain = lastNonce.longValueExact();
-		long nonceOnChain = admin.getNonce().longValueExact();
+		long nonceOnChain = this.admin.getNonce().longValueExact();
 		
 		// account has been used to send transaction outside.
 		if (nonceOnChain > nonceOffChain + 1) {
@@ -60,13 +74,13 @@ public interface NonceKeeper {
 			return;
 		}
 		
-		boolean lastTxSent = admin.getCfx().getTransactionByHash(lastTxHash).sendAndGet().isPresent();
+		boolean lastTxSent = this.admin.getCfx().getTransactionByHash(lastTxHash).sendAndGet().isPresent();
 		
 		if (lastTxSent) {
-			admin.setNonce(lastNonce.add(BigInteger.ONE));
+			this.admin.setNonce(lastNonce.add(BigInteger.ONE));
 		} else {
-			admin.setNonce(lastNonce);
+			this.admin.setNonce(lastNonce);
 		}
 	}
-
+	
 }

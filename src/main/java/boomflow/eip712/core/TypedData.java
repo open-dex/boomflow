@@ -7,6 +7,7 @@ import java.util.Map;
 import org.web3j.crypto.StructuredDataEncoder;
 import org.web3j.utils.Numeric;
 
+import boomflow.common.Address;
 import boomflow.common.SignUtils;
 
 /**
@@ -20,7 +21,7 @@ public interface TypedData {
 	
 	Domain domain();
 	
-	String signer();
+	Address signer();
 	String signature();
 	
 	/**

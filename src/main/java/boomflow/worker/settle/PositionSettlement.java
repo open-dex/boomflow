@@ -7,9 +7,9 @@ import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Int256;
 import org.web3j.abi.datatypes.generated.Uint256;
 
+import boomflow.common.Address;
 import boomflow.common.EncodeUtils;
 import boomflow.common.worker.BatchWorker.Batchable;
-import conflux.web3j.types.CfxAddress;
 
 public abstract class PositionSettlement extends Settleable {
 	
@@ -19,13 +19,13 @@ public abstract class PositionSettlement extends Settleable {
 	public static class TypedPosition extends DynamicStruct {
 		
 		public TypedPosition(long opType, 
-				CfxAddress userAddress, CfxAddress clearAccountAddress, CfxAddress tokenAddress,
+				Address userAddress, Address clearAccountAddress, Address tokenAddress,
 				long deltaLongAmt, long deltaShortAmt,
 				long deltaLongQty, long deltaShortQty,
 				long deltaLongMargin, long deltaShortMargin,
 				long deltaAmount, String symbol) {
 			super(new Uint256(opType), 
-					userAddress.getABIAddress(), clearAccountAddress.getABIAddress(), tokenAddress.getABIAddress(),
+					userAddress.toABI(), clearAccountAddress.toABI(), tokenAddress.toABI(),
 					new Int256(deltaLongAmt), new Int256(deltaShortAmt),
 					new Int256(deltaLongQty), new Int256(deltaShortQty),
 					new Int256(deltaLongMargin), new Int256(deltaShortMargin),

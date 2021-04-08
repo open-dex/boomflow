@@ -2,6 +2,7 @@ package boomflow.worker.settle;
 
 import java.math.BigInteger;
 
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.utils.Strings;
 
 import boomflow.common.Utils;
@@ -71,10 +72,27 @@ public abstract class Settleable implements Batchable {
 		}
 	}
 	
+	public void updateSettlement(SettlementStatus status, String txHash, org.web3j.crypto.RawTransaction tx) {
+		this.update(status, txHash, tx.getNonce());
+		
+		this.status = status;
+		
+		if (this.recorder == null) {
+			this.recorder = new TransactionRecorder(txHash, tx);
+		} else {
+			this.recorder.addRecord(txHash, tx);
+		}
+	}
+	
 	/**
 	 * Indicates whether the specified transaction receipt matches the off-chain values.
 	 */
 	public boolean matches(Receipt receipt) {
+		// check nothing by default
+		return true;
+	}
+	
+	public boolean matches(TransactionReceipt receipt) {
 		// check nothing by default
 		return true;
 	}

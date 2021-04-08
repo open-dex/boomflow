@@ -4,15 +4,15 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
+import boomflow.common.Address;
 import boomflow.common.CfxBuilder;
+import boomflow.log.CfxEventLogMonitor;
 import boomflow.log.DepositData;
 import boomflow.log.EventLogHandler;
 import boomflow.log.EventLogMonitor;
 import boomflow.log.ScheduleWithdrawRequest;
 import conflux.web3j.Cfx;
-import conflux.web3j.types.Address;
 
 public class MonitorEventLogDemo {
 	
@@ -24,11 +24,9 @@ public class MonitorEventLogDemo {
 	}
 	
 	public static void main(String[] args) {
-		Cfx cfx = connectTestnet();
-		
-		EventLogMonitor monitor = new EventLogMonitor(cfx, new ConsoleEventLogHandler(
+		EventLogMonitor monitor = new CfxEventLogMonitor(connectTestnet(), new ConsoleEventLogHandler(
 				17387940,
-				"cfxtest:achf549sa9mxsge2dtzme1mvftm5vv69h2u13t9hew"));
+				Address.createCfxAddress("cfxtest:achf549sa9mxsge2dtzme1mvftm5vv69h2u13t9hew")));
 		
 		monitor.schedule(Executors.newSingleThreadScheduledExecutor(), 3000);
 	}
@@ -37,22 +35,20 @@ public class MonitorEventLogDemo {
 
 class ConsoleEventLogHandler implements EventLogHandler {
 	
-	private BigInteger lastPollEpoch;
+	private BigInteger lastPollBlockNumber;
 	private List<Address> tokenContracts;
 	
-	public ConsoleEventLogHandler(long lastPollEpoch, String... contracts) {
+	public ConsoleEventLogHandler(long lastPollBlockNumber, Address... contracts) {
 		// Could load from file or database
-		this.lastPollEpoch = BigInteger.valueOf(lastPollEpoch);
+		this.lastPollBlockNumber = BigInteger.valueOf(lastPollBlockNumber);
 		
 		// In DEX, application may add a new asset in runtime.
-		this.tokenContracts = Arrays.asList(contracts).stream()
-				.map(Address::new)
-				.collect(Collectors.toList());
+		this.tokenContracts = Arrays.asList(contracts);
 	}
 
 	@Override
-	public BigInteger getLastPollEpoch() {
-		return this.lastPollEpoch;
+	public BigInteger getLastPollBlockNumber() {
+		return this.lastPollBlockNumber;
 	}
 
 	@Override
@@ -61,10 +57,10 @@ class ConsoleEventLogHandler implements EventLogHandler {
 	}
 
 	@Override
-	public void handleEventLogs(List<DepositData> deposits, List<ScheduleWithdrawRequest> withdraws, BigInteger lastPollEpoch) {
+	public void handleEventLogs(List<DepositData> deposits, List<ScheduleWithdrawRequest> withdraws, BigInteger lastPollBlockNumber) {
 		// Should update users' balances and last polled epoch in a transaction
 		System.out.println("==================================================");
-		System.out.printf("Epoch: from = %s, to = %s\n", this.lastPollEpoch, lastPollEpoch);
+		System.out.printf("Epoch: from = %s, to = %s\n", this.lastPollBlockNumber, lastPollBlockNumber);
 		
 		System.out.println("Deposits: " + deposits.size());
 		for (DepositData data : deposits) {
@@ -76,7 +72,7 @@ class ConsoleEventLogHandler implements EventLogHandler {
 			System.out.printf("\tsender = %s, time = %s\n", data.getSenderAddress(), data.getTime());
 		}
 		
-		this.lastPollEpoch = lastPollEpoch;
+		this.lastPollBlockNumber = lastPollBlockNumber;
 	}
 	
 }

@@ -2,8 +2,9 @@ package boomflow.worker;
 
 import java.math.BigInteger;
 
+import org.web3j.protocol.core.Response.Error;
+
 import boomflow.worker.settle.Settleable;
-import conflux.web3j.types.SendTransactionResult;
 
 /**
  * SettlementHandler is used to handle important events that fired in <code>SettlementWorker</code>.
@@ -19,7 +20,7 @@ public interface SettlementHandler extends NonceKeeper, TransactionConfirmationH
 	 * Fired when failed to send transaction to full node due to transaction pool is full.
 	 * 
 	 * Once happened, administrator should be involved to check whether something wrong
-	 * with the full node, or the Conflux network is really congested.
+	 * with the full node, or the blockchain network is really congested.
 	 * 
 	 * Generally, client should listen to such event, and notify administrator timely.
 	 * On the other hand, <code>SettlementWorker</code> will stop working for a while
@@ -34,7 +35,7 @@ public interface SettlementHandler extends NonceKeeper, TransactionConfirmationH
 	 * On the other hand, <code>SettlementWorker</code> will be paused to avoid more
 	 * errors, and requires administrator to resume in manual.
 	 */
-	void onUnexpectedTransactionError(Settleable data, SendTransactionResult result);
+	void onUnexpectedTransactionError(Settleable data, Error error);
 	
 	/**
 	 * Fired when any unexpected exception occurred, excluding the PendingException.

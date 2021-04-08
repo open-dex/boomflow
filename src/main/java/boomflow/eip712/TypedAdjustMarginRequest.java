@@ -10,10 +10,10 @@ import org.web3j.abi.datatypes.StaticStruct;
 import org.web3j.abi.datatypes.generated.Int256;
 import org.web3j.abi.datatypes.generated.Uint256;
 
+import boomflow.common.Address;
 import boomflow.eip712.core.Domain;
 import boomflow.eip712.core.Entry;
 import boomflow.eip712.core.TypedData;
-import conflux.web3j.types.CfxAddress;
 
 public class TypedAdjustMarginRequest extends StaticStruct implements TypedData {
 	
@@ -32,17 +32,19 @@ public class TypedAdjustMarginRequest extends StaticStruct implements TypedData 
 	public long posiSide;
 	public long nonce;
 	
+	private Address signer;
 	private String signature;
 	
-	public TypedAdjustMarginRequest(CfxAddress userAddress, long contractId, BigInteger margin, long posiSide, long nonce, String signature) {
-		super(userAddress.getABIAddress(), new Uint256(contractId), new Int256(margin), new Int256(posiSide), new Uint256(nonce));
+	public TypedAdjustMarginRequest(Address userAddress, long contractId, BigInteger margin, long posiSide, long nonce, String signature) {
+		super(userAddress.toABI(), new Uint256(contractId), new Int256(margin), new Int256(posiSide), new Uint256(nonce));
 		
-		this.userAddress = userAddress.getHexAddress();
+		this.userAddress = userAddress.toHex();
 		this.contractId = contractId;
 		this.margin = margin;
 		this.posiSide = posiSide;
 		this.nonce = nonce;
 		
+		this.signer = userAddress;
 		this.signature = signature;
 	}
 
@@ -62,8 +64,8 @@ public class TypedAdjustMarginRequest extends StaticStruct implements TypedData 
 	}
 
 	@Override
-	public String signer() {
-		return this.userAddress;
+	public Address signer() {
+		return this.signer;
 	}
 
 	@Override
