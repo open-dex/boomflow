@@ -25,9 +25,13 @@ public class SettlementContext {
 		return new SettlementContext(Domain.boomflow().getVerifyingContractAddress(), data, gasLimit, storageLimit);
 	}
 	
-	public RawTransaction buildTx(BigInteger nonce, BigInteger epoch) {
+	public RawTransaction buildCfxTx(BigInteger nonce, BigInteger epoch) {
 		CfxAddress contract = new CfxAddress(this.contract.toString());
 		return RawTransaction.call(nonce, this.gasLimit, contract, this.storageLimit, epoch, this.data);
+	}
+	
+	public org.web3j.crypto.RawTransaction buildEthTx(BigInteger nonce, BigInteger gasPrice) {
+		return org.web3j.crypto.RawTransaction.createTransaction(nonce, gasPrice, this.gasLimit, this.contract.toHex(), this.data);
 	}
 
 }

@@ -1,6 +1,5 @@
 package boomflow.worker;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.NavigableMap;
 import java.util.Optional;
@@ -10,10 +9,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.EthBlockNumber;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
+import boomflow.common.EthWeb3Wrapper;
 import boomflow.event.Event;
 import boomflow.worker.settle.Settleable;
 import boomflow.worker.settle.SettlementStatus;
@@ -129,7 +127,7 @@ public abstract class TransactionConfirmationMonitor {
 	/**
 	 * Append data in queue to check transaction confirmation status.
 	 */
-	public void add(Settleable item) {
+	public void add(Settleable item) throws RpcException {
 		TransactionRecorder recorder = item.getRecorder();
 		if (recorder == null) {
 			return;
@@ -342,28 +340,23 @@ class CfxTransactionConfirmationMonitor extends TransactionConfirmationMonitor {
 
 class EthTransactionConfirmationMonitor extends TransactionConfirmationMonitor {
 	
-	private Web3j web3j;
+	private EthWeb3Wrapper web3j;
 	private BigInteger confirmBlocks;
 
-	public EthTransactionConfirmationMonitor(Web3j web3j, int confirmThreshold, int confirmBlocks) {
+	public EthTransactionConfirmationMonitor(EthWeb3Wrapper web3j, int confirmThreshold, int confirmBlocks) {
 		super(confirmThreshold);
 		
 		this.web3j = web3j;
 		this.confirmBlocks = BigInteger.valueOf(confirmBlocks);
 	}
+	
+	public static EthTransactionConfirmationMonitor createBSC(EthWeb3Wrapper web3j) {
+		return new EthTransactionConfirmationMonitor(web3j, 50, 15);
+	}
 
 	@Override
 	protected BigInteger getBlockNumber() throws RpcException {
-		try {
-			EthBlockNumber response = this.web3j.ethBlockNumber().send();
-			if (response.hasError()) {
-				throw new RpcException(response.getError());
-			}
-			
-			return response.getBlockNumber();
-		} catch (IOException e) {
-			throw RpcException.sendFailure(e);
-		}
+		return this.web3j.getBlockNumber();
 	}
 
 	@Override

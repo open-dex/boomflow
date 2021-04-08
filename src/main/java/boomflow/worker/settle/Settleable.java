@@ -72,6 +72,18 @@ public abstract class Settleable implements Batchable {
 		}
 	}
 	
+	public void updateSettlement(SettlementStatus status, String txHash, org.web3j.crypto.RawTransaction tx) {
+		this.update(status, txHash, tx.getNonce());
+		
+		this.status = status;
+		
+		if (this.recorder == null) {
+			this.recorder = new TransactionRecorder(txHash, tx);
+		} else {
+			this.recorder.addRecord(txHash, tx);
+		}
+	}
+	
 	/**
 	 * Indicates whether the specified transaction receipt matches the off-chain values.
 	 */

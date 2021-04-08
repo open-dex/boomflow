@@ -1,25 +1,22 @@
 package boomflow.log;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.request.EthFilter;
-import org.web3j.protocol.core.methods.response.EthLog.LogObject;
-import org.web3j.protocol.core.methods.response.EthLog.LogResult;
+import org.web3j.protocol.core.methods.response.Log;
 
 import boomflow.common.Address;
-import conflux.web3j.RpcException;
+import boomflow.common.EthWeb3Wrapper;
 
 public class EthEventLogMonitor extends EventLogMonitor {
 	
-	private Web3j web3j;
+	private EthWeb3Wrapper web3j;
 	private BigInteger confirmBlocks;
 
-	public EthEventLogMonitor(Web3j web3j, EventLogHandler handler, int confirmBlocks) {
+	public EthEventLogMonitor(EthWeb3Wrapper web3j, EventLogHandler handler, int confirmBlocks) {
 		super(handler);
 		
 		this.web3j = web3j;
@@ -28,12 +25,10 @@ public class EthEventLogMonitor extends EventLogMonitor {
 
 	@Override
 	protected BigInteger getLatestConfirmedBlock() {
-		try {
-			BigInteger blockNumber = this.web3j.ethBlockNumber().send().getBlockNumber();
-			return this.confirmBlocks.compareTo(blockNumber) >= 0 ? BigInteger.ZERO : blockNumber.subtract(this.confirmBlocks);
-		} catch (IOException e) {
-			throw RpcException.sendFailure(e);
-		}
+		BigInteger blockNumber = this.web3j.getBlockNumber();
+		return this.confirmBlocks.compareTo(blockNumber) >= 0
+				? BigInteger.ZERO
+				: blockNumber.subtract(this.confirmBlocks);
 	}
 
 	@Override
@@ -45,27 +40,9 @@ public class EthEventLogMonitor extends EventLogMonitor {
 				contracts.stream().map(Address::toString).collect(Collectors.toList()));
 		filter.addOptionalTopics(DepositData.EVENT_HASH, ScheduleWithdrawRequest.EVENT_HASH);
 		
-		@SuppressWarnings("rawtypes")
-		List<LogResult> logObjects;
+		List<Log> logs = this.web3j.getLogs(filter);
 		
-		try {
-			logObjects = this.web3j.ethGetLogs(filter).send().getLogs();
-		} catch (IOException e) {
-			throw RpcException.sendFailure(e);
-		}
-		
-		if (logObjects.isEmpty()) {
-			return;
-		}
-		
-		if (!(logObjects.get(0) instanceof LogObject)) {
-			logger.error("unexpected log type retrieved: {}", logObjects.get(0).getClass());
-			return;
-		}
-		
-		for (Object o : logObjects) {
-			LogObject log = (LogObject) o;
-			
+		for (Log log : logs) {
 			if (log.isRemoved()) {
 				logger.debug("log removed: {}", log);
 				continue;

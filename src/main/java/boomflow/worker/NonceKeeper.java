@@ -35,11 +35,21 @@ public interface NonceKeeper {
 
 }
 
-abstract class NonceSyncer {
+interface NonceSyncer {
 	
-	protected abstract long getOnChainNonce();
-	protected abstract void onNonceMismatch(String lastTxHash, BigInteger lastNonce);
+	void sync(NonceKeeper keeper);
 	
+}
+
+class CfxNonceSyncer implements NonceSyncer {
+	
+	private Account admin;
+	
+	public CfxNonceSyncer(Account admin) {
+		this.admin = admin;
+	}
+	
+	@Override
 	public void sync(NonceKeeper keeper) {
 		String lastTxHash = keeper.getLastTxHash();
 		if (Strings.isEmpty(lastTxHash)) {
@@ -52,7 +62,7 @@ abstract class NonceSyncer {
 		}
 		
 		long nonceOffChain = lastNonce.longValueExact();
-		long nonceOnChain = this.getOnChainNonce();
+		long nonceOnChain = this.admin.getNonce().longValueExact();
 		
 		// account has been used to send transaction outside.
 		if (nonceOnChain > nonceOffChain + 1) {
@@ -64,26 +74,6 @@ abstract class NonceSyncer {
 			return;
 		}
 		
-		this.onNonceMismatch(lastTxHash, lastNonce);
-	}
-
-}
-
-class CfxNonceSyncer extends NonceSyncer {
-	
-	private Account admin;
-	
-	public CfxNonceSyncer(Account admin) {
-		this.admin = admin;
-	}
-
-	@Override
-	protected long getOnChainNonce() {
-		return this.admin.getNonce().longValueExact();
-	}
-
-	@Override
-	protected void onNonceMismatch(String lastTxHash, BigInteger lastNonce) {
 		boolean lastTxSent = this.admin.getCfx().getTransactionByHash(lastTxHash).sendAndGet().isPresent();
 		
 		if (lastTxSent) {
