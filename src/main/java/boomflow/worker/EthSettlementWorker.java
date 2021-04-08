@@ -110,7 +110,7 @@ public class EthSettlementWorker extends SettlementWorker {
 		} catch (RpcException e) {
 			// possible temp IO error
 			if (!Utils.isRpcError(e)) {
-				// TODO depend on heartbeat service to monitor the health of full node.
+				// It's up to heartbeat service to monitor the health of full node.
 				throw new PendingException(1000, "failed to send raw transaction due to IO error");
 			}
 			
