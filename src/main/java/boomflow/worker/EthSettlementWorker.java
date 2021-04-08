@@ -131,6 +131,7 @@ public class EthSettlementWorker extends SettlementWorker {
 				throw new PendingException(300, "gas price too low");
 				
 			case "insufficient funds for gas * price + value":
+				// generally, the balance should be monitored, and always be enough.
 				throw new Exception("Balance not enough to send transaction", e);
 				
 			case "nonce too low":
@@ -154,7 +155,7 @@ public class EthSettlementWorker extends SettlementWorker {
 	}
 	
 	/**
-	 * Returns a best practical gas price to send transaction for the specifed data.
+	 * Returns a best practical gas price to send transaction for the specified data.
 	 * 1) For the first time, use average gas price from blockchain.
 	 * 2) When service restarted (last price info missed), use average gas price from blockchain.
 	 * 3) When any error occurred, just re-send transaction with same gas price.
