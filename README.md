@@ -37,3 +37,9 @@ Generally, EIP712 signature are widely used and should be verfied at backend ser
 
 Application could create one or multiple `SettlementWorker` for asynchronous settlement on chain. On the other hand, 
 application should provide necessary `SettlementHandler` to handle exceptions when something goes wrong. Besides, to make sure transaction propagated and executed timely, we could configure `TransactionRelayer` with multiple RPC servers to achieve better transaction propagation. `SettlementDemo` under examples folder shows how to build `SettlementWorker` to settle data asynchronously.
+
+## Monitoring
+To ensure the SDK work stably, client has to monitor some items as following:
+
+- **Balance**: periodically check if the balance of settlement account is enough on blockchain. Once not enough, the settlement on chain will be failed.
+- **Full node**: use `HeartBeat` to monitor the availability of full node. Once unavailable, adminitrator should be involved to recover the full node service timely. Otherwise, the settlement on chain will be failed and cannot detect the user deposit on chain. It is strongly recommended to prepare a slave full node for failover.
