@@ -79,7 +79,8 @@ public class SettlementDemo {
 						Address.createCfxAddress("cfxtest:aar61c2b0cvt4gr2m4ytn6xe7a55s261me411kwwkc"),
 						Address.createCfxAddress("cfxtest:aan02vpwvz8crpa1n10j17ufceefptdc2y9cx0zd94"),
 						Address.createCfxAddress("cfxtest:achf549sa9mxsge2dtzme1mvftm5vv69h2u13t9hew"),
-						1, 1, 1, 1, 1, 1, 1, "CFX/USDT");
+						BigInteger.ONE, BigInteger.ONE, BigInteger.ONE, BigInteger.ONE, BigInteger.ONE, BigInteger.ONE, BigInteger.ONE, "CFX/USDT",
+						BigInteger.ONE, Address.createCfxAddress("cfxtest:achf549sa9mxsge2dtzme1mvftm5vv69h2u13t9hew"), BigInteger.ONE);
 			}
 			
 		});
