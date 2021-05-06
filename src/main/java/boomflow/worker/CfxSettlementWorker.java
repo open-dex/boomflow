@@ -12,6 +12,7 @@ import boomflow.worker.settle.SettlementStatus;
 import boomflow.worker.settle.TransactionRecorder;
 import conflux.web3j.Account;
 import conflux.web3j.Cfx;
+import conflux.web3j.CfxUnit;
 import conflux.web3j.RpcException;
 import conflux.web3j.types.RawTransaction;
 import conflux.web3j.types.SendTransactionResult;
@@ -20,8 +21,6 @@ public class CfxSettlementWorker extends SettlementWorker {
 	
 	private static final BigInteger CHECK_NONCE_INTERVAL = BigInteger.valueOf(100);
 	private static final BigInteger CHECK_NONCE_FUTURE_THRESHOLD = BigInteger.valueOf(1000);
-	
-	private static final BigInteger DEFAULT_GAS_PRICE_INCREMENT = BigInteger.ONE;
 	
 	private Account admin;
 	
@@ -90,11 +89,7 @@ public class CfxSettlementWorker extends SettlementWorker {
 		
 		// increase gas price if re-send transaction.
 		if (resend) {
-			Optional<BigInteger> prevGasPrice = recorder.getLast().getGasPrice();
-			if (prevGasPrice.isPresent()) {
-				BigInteger newGasPrice = prevGasPrice.get().add(DEFAULT_GAS_PRICE_INCREMENT);
-				tx.setGasPrice(newGasPrice);
-			}
+			this.increaseGasPriceOnResend(tx, recorder);
 		}
 		
 		String signedTx = this.admin.sign(tx);
@@ -157,6 +152,20 @@ public class CfxSettlementWorker extends SettlementWorker {
 			this.handler.onUnexpectedTransactionError(data, result.getRawError());
 			throw new PendingException(this.getPauseIntervalMillis(), "unknown error type found, result = %s", result);
 		}
+	}
+	
+	private void increaseGasPriceOnResend(RawTransaction tx, TransactionRecorder recorder) {
+		Optional<BigInteger> maybePrevGasPrice = recorder.getLast().getGasPrice();
+		if (!maybePrevGasPrice.isPresent()) {
+			return;
+		}
+		
+		BigInteger prevGasPrice = maybePrevGasPrice.get();
+		BigInteger newGasPrice = prevGasPrice.longValue() <= 1_000_000
+				? prevGasPrice.multiply(BigInteger.valueOf(1000))
+				: prevGasPrice.add(CfxUnit.GDRIP_ONE);
+		
+		tx.setGasPrice(newGasPrice);
 	}
 
 }
