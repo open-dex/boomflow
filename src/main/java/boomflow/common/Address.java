@@ -3,6 +3,7 @@ package boomflow.common;
 import java.math.BigInteger;
 
 import org.web3j.crypto.Keys;
+import org.web3j.utils.Numeric;
 
 import conflux.web3j.types.AddressException;
 import conflux.web3j.types.AddressType;
@@ -78,6 +79,7 @@ class EthAddress implements Address {
 	@Override
 	public boolean equals(BigInteger pubKey) {
 		String recoveredAddress = Keys.getAddress(pubKey);
+		recoveredAddress = Numeric.prependHexPrefix(recoveredAddress);
 		return this.address.equalsIgnoreCase(recoveredAddress);
 	}
 
