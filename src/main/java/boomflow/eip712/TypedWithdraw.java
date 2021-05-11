@@ -27,26 +27,32 @@ public class TypedWithdraw extends StaticStruct implements TypedData {
 			new Entry("amount", "uint256"),
 			new Entry("recipient", "address"),
 			new Entry("burn", "bool"),
-			new Entry("nonce", "uint256")));
+			new Entry("nonce", "uint256"),
+			new Entry("gasFeeToken", "address"),
+			new Entry("gasFee", "uint256")));
 	
 	public String userAddress;
 	public BigInteger amount;
 	public String recipient;
 	public boolean burn;
 	public long nonce;
+	public String gasFeeToken;
+	public BigInteger gasFee;
 	
 	private Address contractAddress;
 	private Address signer;
 	private String signature;
 	
-	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long nonce, Address contractAddress, String signature) {
-		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(nonce));
+	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long nonce, Address gasFeeToken, BigInteger gasFee, Address contractAddress, String signature) {
+		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(nonce), gasFeeToken.toABI(), new Uint256(gasFee));
 		
 		this.userAddress = userAddress.toHex();
 		this.amount = amount;
 		this.recipient = recipient.toHex();
 		this.burn = burn;
 		this.nonce = nonce;
+		this.gasFeeToken = gasFeeToken.toHex();
+		this.gasFee = gasFee;
 		
 		this.contractAddress = contractAddress;
 		this.signer = userAddress;
