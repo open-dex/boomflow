@@ -16,7 +16,7 @@ public class EthEventLogMonitor extends EventLogMonitor {
 	private EthWeb3Wrapper web3j;
 	private BigInteger confirmBlocks;
 
-	public EthEventLogMonitor(EthWeb3Wrapper web3j, EventLogHandler handler, int confirmBlocks) {
+	public EthEventLogMonitor(EthWeb3Wrapper web3j, BaseEventLogHandler handler, int confirmBlocks) {
 		super(handler);
 		
 		this.web3j = web3j;
@@ -32,37 +32,19 @@ public class EthEventLogMonitor extends EventLogMonitor {
 	}
 
 	@Override
-	protected void pollEventLogs(BigInteger from, BigInteger to, List<Address> contracts, 
-			List<DepositData> deposits, List<ScheduleWithdrawRequest> withdraws) {
+	protected List<EventLogData> pollEventLogs(BigInteger from, BigInteger to, List<Address> contracts, List<String> topics) {
 		EthFilter filter = new EthFilter(
 				DefaultBlockParameter.valueOf(from),
 				DefaultBlockParameter.valueOf(to),
 				contracts.stream().map(Address::toString).collect(Collectors.toList()));
-		filter.addOptionalTopics(DepositData.EVENT_HASH, ScheduleWithdrawRequest.EVENT_HASH);
+		filter.addOptionalTopics(topics.toArray(new String[topics.size()]));
 		
 		List<Log> logs = this.web3j.getLogs(filter);
 		
-		for (Log log : logs) {
-			if (log.isRemoved()) {
-				logger.debug("log removed: {}", log);
-				continue;
-			}
-			
-			// topics[0] is event hash, and should not be empty
-			String eventHash = log.getTopics().get(0);
-			
-			if (DepositData.EVENT_HASH.equalsIgnoreCase(eventHash)) {
-				DepositData data = new DepositData(log);
-				logger.trace("polled deposit event log, sender = {}, recipient = {}, amount = {}", data.getSenderAddress(), data.getRecipientAddress(), data.getAmount());
-				deposits.add(data);
-			}
-			
-			if (ScheduleWithdrawRequest.EVENT_HASH.equalsIgnoreCase(eventHash)) {
-				ScheduleWithdrawRequest data = new ScheduleWithdrawRequest(log);
-				logger.trace("polled withdraw event log, sender = {}, time = {}", data.getSenderAddress(), data.getTime());
-				withdraws.add(data);
-			}
-		}
+		return logs.stream()
+				.filter(l -> !l.isRemoved())
+				.map(l -> this.handler.parseLog(l))
+				.collect(Collectors.toList());
 	}
 	
 }

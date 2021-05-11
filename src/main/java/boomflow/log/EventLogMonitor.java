@@ -2,7 +2,6 @@ package boomflow.log;
 
 import java.math.BigInteger;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,16 +19,15 @@ import conflux.web3j.RpcException;
  */
 public abstract class EventLogMonitor implements Runnable {
 	
-	private EventLogHandler handler;
+	protected BaseEventLogHandler handler;
 	protected Logger logger = LoggerFactory.getLogger(EventLogMonitor.class);
 	
-	protected EventLogMonitor(EventLogHandler handler) {
+	protected EventLogMonitor(BaseEventLogHandler handler) {
 		this.handler = handler;
 	}
 	
 	protected abstract BigInteger getLatestConfirmedBlock();
-	protected abstract void pollEventLogs(BigInteger from, BigInteger to, List<Address> contracts,
-			List<DepositData> deposits, List<ScheduleWithdrawRequest> withdraws);
+	protected abstract List<EventLogData> pollEventLogs(BigInteger from, BigInteger to, List<Address> contracts, List<String> topics);
 	
 	/**
 	 * Poll event logs for confirmed blocks.
@@ -47,7 +45,7 @@ public abstract class EventLogMonitor implements Runnable {
 		// poll logs from the latest confirmed block if address not specified
 		List<Address> pollAddresses = this.handler.getPollAddresses();
         if (pollAddresses.isEmpty()) {
-			this.handler.handleEventLogs(Collections.emptyList(), Collections.emptyList(), confirmed);
+			this.handler.handleEventLogs(Collections.emptyList(), confirmed);
 			logger.trace("address not specified and just move forward the last polled block");
 			return false;
 		}
@@ -58,17 +56,8 @@ public abstract class EventLogMonitor implements Runnable {
         // poll logs
         BigInteger pollFrom = lastPolled.add(BigInteger.ONE);
 		
-		List<DepositData> deposits = new LinkedList<DepositData>();
-		List<ScheduleWithdrawRequest> withdraws = new LinkedList<ScheduleWithdrawRequest>();
-		
-		this.pollEventLogs(pollFrom, pollTo, pollAddresses, deposits, withdraws);
-		
-		if (!deposits.isEmpty() || !withdraws.isEmpty()) {
-			logger.info("polled event logs, from = {}, to = {}, deposits = {}, withdraws = {}",
-					pollFrom, pollTo, deposits.size(), withdraws.size());
-		}
-		
-		this.handler.handleEventLogs(deposits, withdraws, pollTo);
+		List<EventLogData> logs = this.pollEventLogs(pollFrom, pollTo, pollAddresses, this.handler.getPollTopics());
+		this.handler.handleEventLogs(logs, pollTo);
         
         return confirmed.compareTo(pollTo) > 0;
 	}

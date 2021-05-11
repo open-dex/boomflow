@@ -1,40 +1,68 @@
 package boomflow.log;
 
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
-import boomflow.common.Address;
+import conflux.web3j.response.Log;
 
 /**
- * EventLogHandler is implemented by any object that consume the polled event logs.
- * 
- * Note, the block number is the canonical block height on BSC/ETH, or epoch number
- * on Conflux network.
+ * EventLogHandler is a log handler for boomflow events.
  */
-public interface EventLogHandler {
+public interface EventLogHandler extends BaseEventLogHandler {
 	
-	/**
-	 * Default maximum number of pivot blocks to poll at a time.
-	 */
-	static BigInteger DEFAULT_POLL_BLOCKS = BigInteger.valueOf(10);
+	@Override
+	default List<String> getPollTopics() {
+		return Arrays.asList(DepositData.EVENT_HASH, ScheduleWithdrawRequest.EVENT_HASH);
+	}
 	
-	/**
-	 * Returns the latest polled pivot block number. Generally, the value
-	 * is loaded from database or configuration service when initialized,
-	 * and updated via method <code>handleEventLogs</code>.
-	 */
-	BigInteger getLastPollBlockNumber();
+	@Override
+	default EventLogData parseLog(Log log) {
+		String eventHash = log.getTopics().get(0);
+		
+		if (DepositData.EVENT_HASH.equalsIgnoreCase(eventHash)) {
+			return new DepositData(log);
+		}
+		
+		if (ScheduleWithdrawRequest.EVENT_HASH.equalsIgnoreCase(eventHash)) {
+			return new ScheduleWithdrawRequest(log);
+		}
+		
+		return new EventLogData(log);
+	}
 	
-	/**
-	 * Returns the contract addresses to poll event logs.
-	 */
-	List<Address> getPollAddresses();
+	@Override
+	default EventLogData parseLog(org.web3j.protocol.core.methods.response.Log log) {
+		String eventHash = log.getTopics().get(0);
+		
+		if (DepositData.EVENT_HASH.equalsIgnoreCase(eventHash)) {
+			return new DepositData(log);
+		}
+		
+		if (ScheduleWithdrawRequest.EVENT_HASH.equalsIgnoreCase(eventHash)) {
+			return new ScheduleWithdrawRequest(log);
+		}
+		
+		return new EventLogData(log);
+	}
 	
-	/**
-	 * Maximum number of pivot blocks to poll at a time.
-	 */
-	default BigInteger getMaxPollBlocks() {
-		return DEFAULT_POLL_BLOCKS;
+	@Override
+	default void handleEventLogs(List<EventLogData> logs, BigInteger lastPollBlockNumber) {
+		List<DepositData> deposits = new LinkedList<DepositData>();
+		List<ScheduleWithdrawRequest> withdraws = new LinkedList<ScheduleWithdrawRequest>();
+		
+		for (EventLogData log : logs) {
+			if (log instanceof DepositData) {
+				deposits.add((DepositData) log);
+			}
+			
+			if (log instanceof ScheduleWithdrawRequest) {
+				withdraws.add((ScheduleWithdrawRequest) log);
+			}
+		}
+		
+		this.handleEventLogs(deposits, withdraws, lastPollBlockNumber);
 	}
 	
 	/**
@@ -46,5 +74,5 @@ public interface EventLogHandler {
 	 * @param lastPollBlock last polled pivot block number.
 	 */
 	void handleEventLogs(List<DepositData> deposits, List<ScheduleWithdrawRequest> withdraws, BigInteger lastPollBlockNumber);
-
+	
 }
