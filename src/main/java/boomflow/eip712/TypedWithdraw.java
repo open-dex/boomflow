@@ -29,7 +29,8 @@ public class TypedWithdraw extends StaticStruct implements TypedData {
 			new Entry("burn", "bool"),
 			new Entry("nonce", "uint256"),
 			new Entry("gasFeeToken", "address"),
-			new Entry("gasFee", "uint256")));
+			new Entry("gasFee", "uint256"),
+			new Entry("gasFeeRecipient", "address")));
 	
 	public String userAddress;
 	public BigInteger amount;
@@ -38,13 +39,14 @@ public class TypedWithdraw extends StaticStruct implements TypedData {
 	public long nonce;
 	public String gasFeeToken;
 	public BigInteger gasFee;
+	public String gasFeeRecipient;
 	
 	private Address contractAddress;
 	private Address signer;
 	private String signature;
 	
-	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long nonce, Address gasFeeToken, BigInteger gasFee, Address contractAddress, String signature) {
-		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(nonce), gasFeeToken.toABI(), new Uint256(gasFee));
+	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long nonce, Address gasFeeToken, BigInteger gasFee, Address gasFeeRecipient, Address contractAddress, String signature) {
+		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(nonce), gasFeeToken.toABI(), new Uint256(gasFee), gasFeeRecipient.toABI());
 		
 		this.userAddress = userAddress.toHex();
 		this.amount = amount;
@@ -53,6 +55,7 @@ public class TypedWithdraw extends StaticStruct implements TypedData {
 		this.nonce = nonce;
 		this.gasFeeToken = gasFeeToken.toHex();
 		this.gasFee = gasFee;
+		this.gasFeeRecipient = gasFeeRecipient.toHex();
 		
 		this.contractAddress = contractAddress;
 		this.signer = userAddress;

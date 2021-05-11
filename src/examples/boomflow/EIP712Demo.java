@@ -15,6 +15,7 @@ public class EIP712Demo {
 				System.currentTimeMillis(),						// usually comes from client side
 				Address.createCfxAddress("cfxtest:achu8p0e61a977wjwt9r1934h86853rp6664nu0fvn"),
 				CfxUnit.gdrip2Drip(10),
+				Address.createCfxAddress("cfxtest:achu8p0e61a977wjwt9r1934h86853rp6664nu0fvn"),
 				Address.createCfxAddress("cfxtest:achs3nehae0j6ksvy1bhrffsh1rtfrw1f6w1kzv46t"),	// WCFX address
 				"signature in HEX format, length is 132 with 0x prefix"	// EIP712 signature that from client side
 		);
