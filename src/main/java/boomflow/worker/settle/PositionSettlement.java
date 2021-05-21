@@ -14,7 +14,7 @@ import boomflow.common.worker.BatchWorker.Batchable;
 public abstract class PositionSettlement extends Settleable {
 	
 	private static final String FUNCTION_NAME = "updatePosition";
-	private static final BigInteger DEFAULT_GAS_LIMIT = BigInteger.valueOf(100000);
+	public static BigInteger defaultGasLimit = BigInteger.valueOf(150000);
 	
 	public static class TypedPosition extends DynamicStruct {
 		
@@ -56,7 +56,7 @@ public abstract class PositionSettlement extends Settleable {
 	public SettlementContext getSettlementContext() throws Exception {
 		TypedPosition position = this.toTypedData();
 		String data = EncodeUtils.encode(FUNCTION_NAME, position);
-		return SettlementContext.boomflow(data, DEFAULT_GAS_LIMIT, DEFAULT_STORAGE_LIMIT);
+		return SettlementContext.boomflow(data, defaultGasLimit, DEFAULT_STORAGE_LIMIT);
 	}
 
 }

@@ -24,7 +24,7 @@ public abstract class WithdrawSettlement extends Settleable {
 	}
 	
 	private static final String FUNCTION_NAME = "withdraw";
-	private static final BigInteger DEFAULT_GAS_LIMIT = BigInteger.valueOf(200000);
+	public static BigInteger defaultGasLimit = BigInteger.valueOf(200000);
 	
 	private TypedGasFee gasFee;
 
@@ -51,7 +51,7 @@ public abstract class WithdrawSettlement extends Settleable {
 		TypedWithdraw withdraw = this.toTypedData();
 		DynamicBytes signature = EncodeUtils.hex2Bytes(withdraw.signature());
 		String data = EncodeUtils.encode(FUNCTION_NAME, withdraw, signature, this.gasFee);
-		return new SettlementContext(withdraw.domain().getVerifyingContractAddress(), data, DEFAULT_GAS_LIMIT, DEFAULT_STORAGE_LIMIT);
+		return new SettlementContext(withdraw.domain().getVerifyingContractAddress(), data, defaultGasLimit, DEFAULT_STORAGE_LIMIT);
 	}
 
 }
