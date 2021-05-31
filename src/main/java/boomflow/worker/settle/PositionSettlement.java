@@ -20,16 +20,14 @@ public abstract class PositionSettlement extends Settleable {
 		
 		public TypedPosition(long opType, 
 				Address userAddress, Address clearAccountAddress, Address tokenAddress,
-				BigInteger deltaLongAmt, BigInteger deltaShortAmt,
-				BigInteger deltaLongQty, BigInteger deltaShortQty,
-				BigInteger deltaLongMargin, BigInteger deltaShortMargin,
+				BigInteger deltaMatchAmt, BigInteger deltaMatchQty,
+				BigInteger deltaMargin, BigInteger totalMargin,
 				BigInteger deltaAmount, String symbol,
 				BigInteger fee, Address gasFeeToken, BigInteger gasFee) {
 			super(new Uint256(opType), 
 					userAddress.toABI(), clearAccountAddress.toABI(), tokenAddress.toABI(),
-					new Int256(deltaLongAmt), new Int256(deltaShortAmt),
-					new Int256(deltaLongQty), new Int256(deltaShortQty),
-					new Int256(deltaLongMargin), new Int256(deltaShortMargin),
+					new Uint256(deltaMatchAmt), new Uint256(deltaMatchQty),
+					new Int256(deltaMargin), new Uint256(totalMargin),
 					new Int256(deltaAmount), new Utf8String(symbol),
 					new Uint256(fee), gasFeeToken.toABI(), new Uint256(gasFee));
 		}
