@@ -44,18 +44,18 @@ public class TypedWithdraw extends DynamicStruct implements TypedData {
 	private Address signer;
 	private String signature;
 	
-	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long nonce, String userSignature,
-			Address gasFeeToken, BigInteger gasFeeAmount, Address gasFeeRecipient, 
+	public TypedWithdraw(Address userAddress, BigInteger amount, Address recipient, boolean burn, long userNonce, String userSignature,
+			Address gasFeeToken, BigInteger gasFeeAmount, Address gasFeeRecipient, long signerNonce,
 			Address contractAddress, Address signer, String signature) {
-		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(nonce), EncodeUtils.hex2Bytes(userSignature),
-				gasFeeToken.toABI(), new Uint256(gasFeeAmount), gasFeeRecipient.toABI(),
+		super(userAddress.toABI(), new Uint256(amount), recipient.toABI(), new Bool(burn), new Uint256(userNonce), EncodeUtils.hex2Bytes(userSignature),
+				gasFeeToken.toABI(), new Uint256(gasFeeAmount), gasFeeRecipient.toABI(), new Uint256(signerNonce),
 				signer.toABI(), EncodeUtils.hex2Bytes(signature));
 		
 		this.userAddress = userAddress.toHex();
 		this.amount = amount;
 		this.recipient = recipient.toHex();
 		this.burn = burn;
-		this.nonce = nonce;
+		this.nonce = signerNonce;
 		
 		this.gasFeeToken = gasFeeToken.toHex();
 		this.gasFeeAmount = gasFeeAmount;
